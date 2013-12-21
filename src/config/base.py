@@ -4,10 +4,16 @@ Created on 2013.12.10.
 @author: 502108836
 '''
 
-import ConfigParser as CP
-from ConfigParser import ConfigParser
+from yaml import load
+import logging
 
-def load(path):
-    cp = ConfigParser()
-    cp.read(path)
-    return cp
+logger = logging.getLogger(__name__)
+
+def loadConfig(path):
+    try:
+        with open(path) as f:
+            config = load(f)
+    except : 
+        logger.error('Fatal error: Cannot load config, at {path}'.format(path=path))
+        raise
+    return config

@@ -1,6 +1,6 @@
 '''
-This module holds various definitions to parse input sources
-such as stock files.
+Module of stock parsers.
+
 Created on Apr 13, 2013
 
 @author: davidborsodi
@@ -10,12 +10,13 @@ Created on Apr 13, 2013
 import re
 import collections as co
 from _pyio import __metaclass__
-import abc
 
+from datasources.cardquery import CardFinder
+from datasources.entities import Card
+import logging
+from datasources.editions import EditionMapper
 
-def read_stock_defaulted(stockfile, defaultset):
-    pass
-
+logger = logging.getLogger(__name__)
 
 def parse_stockfile(stockfile):
     pass
@@ -28,66 +29,6 @@ def setSeparator(self):
     else:
         self.separator = ';'
     
-    
-'''
-Constructs the set mapping from the input sequence.
-Returns an map of setname=>[setname,abbrs...] for each entry.
-
-The set mapping file should contain the abbreviations for set names.
-Names are NOT case sensitive
-Examples:
-Type 1, without whitespaces in the entries
-    Alpha: A
-    Return to Ravniva: RTR 
-    Tempest: TP TEP TMP
-
-Type 2, with whitespaces in the entries a separator character is needed (comma!)
-Duel Decks: Jace vs Chandra: DD jvc, DD:jvc,jvc
-WPN Promos: p wpn, wpn
-
-
-Two grammar options possible.
-
-If the abbreviations don't contain whitespaces then:
-
-    whitespace = "\s+";
-    setname = "valid mtg setnames";
-    abbr = "[^\s]+";
-    entry = setname":"[whitespace][abbr]{[whitespace abbr]};
-    grammar = { entry } ;
-    
-Otherwise you have to use a separator character:
-
-    whitespace = "\s+";
-    separator = ",";
-    setname = "valid mtg setnames";
-    abbr = "[^;]+";
-    entry = setname":"[whitespace][abbr]{[separator abbr]};
-    grammar = { entry } ;
-
-'''
-
-
-SEP=','
-def readSetMap(sets):
-    global SEP
-    setmap = co.defaultdict()
-    for ed in sets:
-        ed = ed.strip()
-        firstcolon = ed.index(':')
-        name = ed[0:firstcolon]
-        rest = ed[firstcolon+1:]
-        separator = r'\s+'
-        if SEP in rest:
-            separator = SEP
-        abbrs = map(lambda s: s.strip(), rest.split(separator))
-        name= name.lower()
-        for abbr in abbrs:
-            setmap[abbr.lower()] = name
-        setmap[name]=name
-#    for k in setmap.iteritems():
-#        print k
-    return setmap
  
 '''
 Conform to the format:
@@ -170,18 +111,15 @@ class BasicMatchState(object):
         self.sets = sets
         self.conditions= conditions
 
-    def match(self, token):
-        matches = [getattr(self, field)(token) for field in self.fields]
-        matchcount = matches.count(True)
-        self.matchset = zip(self.fields, matches)
-        if matchcount > 1:
-            print 'Ambiguous parse, matches: {ms}'.format(ms=self.matchset)
-            #raise Exception('Ambiguous parse, matches: {ms}'.format(ms=self.matchset))
-        if matchcount < 1:
-            self.transition = CardMatchState() 
-            return self.transition.match(token)
+    def match(self, token, termmap):
+        matched = False
+        for field in self.fields:
+            if getattr(self, field)(token):
+                termmap[field].append(token)
+                matched=True
+        if not matched:
+            raise Exception('Meaningless token: ', token)
         self.transition = self
-        return MatchResult(self.matchset, token, True)
 
     def quantity(self, token):
         return token.isdigit()
@@ -195,11 +133,12 @@ class BasicMatchState(object):
     
 class CardMatchState(object):
     
-    def __init__(self,prevtoken=None):
+    def __init__(self,editionMapper, prevtoken=None):
         self.parts = []
         if prevtoken is not None:
             self.parts.append(prevtoken)
         self.transition = ()
+        self.cf = CardFinder(editionMapper)
         
     def match(self, token):
         self.parts.append(token)
@@ -213,31 +152,120 @@ class CardMatchState(object):
         return MatchResult(('cardname',True),name, ismatch)
 
     def checkCardExists(self, cardname):
-        cds = map(lambda x: x.strip(), open('../test/cards').readlines())
-        return cardname in cds
+        return self.cf.findCard(cardname) != []
 #        pass  
 
+'''
+a consecutive set of tokens which form a cardname
+first and last token position in the parsed stream included
+'''
+class CardPart:
+    
+    def __init__(self, t, pos):
+        self.tokens=[t]
+        self.joined =t
+        self.first=self.last=pos
+    
+    def addToken(self, t):
+        self.tokens.append(t)
+        self.joined += ' ' + t
+        
+    def __repr__(self):
+        return '{t},<{f}:{l}>'.format(t=self.tokens,f=self.first, l= self.last)
+        
 class StockParser(object):
     
-    def __init__(self, sets, conditions, lines, separator):
+    def __init__(self, editionMapper, conditions, lines, separator):
         self.separator = separator 
         self.fields = ['quantity', 'condition', 'setname']
-        self.sets = sets
+        self.editionMapper = editionMapper
         self.conditions= conditions
         self.lines = lines
 
     def parse(self, tokens):
-        if len(tokens) == 1:
-            return (1, 'NM', '', tokens[0])
-        terms =[]
-        fields= self.fields[:]
-        self.state = BasicMatchState(fields, self.conditions, self.sets)
-        for token in tokens:
-            term = self.state.match(token)
-            terms.append(term)
-            self.state = self.state.transition 
-        return self.backtrack(terms)
+        origtokens=tokens[:]
+        try:
+            if len(tokens) == 1:
+                return (1, 'NM', '', tokens[0])
+            termmap = co.defaultdict(list)
+            cardname=self.findCardName(tokens)
+            for token in tokens:
+                self.state.match(token, termmap)
+                self.state = self.state.transition 
+        except Exception as e:
+            logger.warning('Cannot parse row: %s', origtokens)
+            logger.exception(e)
+        return 
 
+    def consolidateTerms(self, termmap):
+        pass
+    def findCardParts(self, tokens, cf):
+        cps=[]
+        contMatch=False
+        i=0
+        while i <len(tokens):
+            token=tokens[i]
+            if contMatch:
+                print 'checking', cps[-1].joined + ' ' + token
+                if cf.isCardNamePrefix(cps[-1].joined + ' ' + token):
+                    cps[-1].addToken(token)
+                    cps[-1].last = i
+                else:
+                    contMatch=False
+                    i-=1
+            else:
+                print 'checking', token
+                if cf.isCardNamePrefix(token):
+                    contMatch=True
+                    cp = CardPart(token, i)
+                    cps.append(cp)
+            i+=1
+        return cps
+
+    '''
+        Finds the card name in the token stream.
+        Returns the card name and removes it from the tokens.
+    '''
+    def findCardName(self, tokens):
+        cf = CardFinder(self.editionMapper)
+        #populate the card parts, which is every word that is a prefix of a cardname
+        cps=self.findCardParts(tokens, cf)
+        #filter out partial matches
+        candidates = []
+        for cp in cps:
+            if cf.findCard(cp.joined) != []:
+                candidates.append(cp)
+        #if there is no match, we're fucked
+        if candidates == []:
+            raise Exception('No card in the row: ' + ' '.join(tokens))
+        #same is true for more than 3 results
+        if len(candidates) > 3:
+            raise Exception('Totally fucked up row: ' + ' '.join(tokens))
+
+        #one match, coo
+        if len(candidates) == 1:
+            can = candidates[0]
+            ll = len(tokens)
+            tokens=tokens[:can.first] 
+            if can.last < ll-1:
+                tokens += tokens[can.last+1:]
+            return can.joined
+        #if more than one candidates exists, cross check
+        #first check whether any if them is a set name as well
+        setnames=[]
+        for c in candidates:
+            if self.editionMapper.isEdition(c.joined):
+                setnames.append(c)
+        #and check whether any of them is a condition name
+        condnames=[]
+        for c in candidates:
+            if c.joined in self.conditions:
+                condnames.append(c)
+        #if the previous lists are empty, there are two cards in the row..
+        if setnames == [] and condnames == []:
+            raise Exception('More than one card in the row:' + ' '.join(tokens))
+
+        
     def backtrack(self, terms):
         fieldsToMatch = self.fields[:]
         fieldsToMatch.append('cardname')
@@ -268,17 +296,14 @@ Must have a header line
    
 import xlrd
 import collections as co
-def readXLSStock(stock):
+
+def readXLSStock(stock, editionMapper, conditionNames):
     wb = xlrd.open_workbook(stock, ragged_rows=True)
     sheet= wb.sheet_by_index(0)
-#    rowidx = -1 
-#    rl = 0
-#    while rl < 4:
-#        rowidx+=1
-#        rl = sheet.row_len(rowidx)
-    keys = co.defaultdict(list)
+    raws = co.defaultdict(dict)
     fieldcount = sheet.row_len(0)
     fields = {}
+    cf = CardFinder(editionMapper)
     for f in range(fieldcount):
         if sheet.cell_type(0, f) in (xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK):
             pass
@@ -289,13 +314,26 @@ def readXLSStock(stock):
     print rc
     for rx in range(1, rc): 
         for colidx in range(sheet.row_len(rx)):
-            print 'row', rx, 'col', colidx
             if sheet.cell_type(rx, colidx) in (xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK):
                 pass
             else:
-                keys[rx].append((colidx, sheet.cell_value(rx, colidx)))
-                print sheet.cell_value(rx, colidx)
-        
-    
+                raws[rx][fields[colidx]]= sheet.cell_value(rx, colidx)
+    cards=[]
+    for rawCard in raws.values():
+        c = Card(rawCard.get('qty', 1), rawCard.get('condition', 'NM'))
+        cardInfo = cf.findCard(rawCard['name'], rawCard.get('set', None))
+        if cardInfo != []:
+            c.info = cardInfo[0]
+            cards.append(c)
+    print cards
+    return cards
 
+class RawCard(object):
     
+    def __init__(self, **kwargs):
+        self.name=kwargs['name']
+        self.qty=kwargs.get('qty', 1)
+        self.edition=kwargs.get('set', None)
+        self.condition=kwargs.get('condition', None)
+        
+        

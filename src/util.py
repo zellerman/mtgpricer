@@ -3,6 +3,10 @@ Created on 2013.12.11.
 
 @author: 502108836
 '''
+
+def lowerize(L):
+    return map(lambda l: l.lower(), L)
+
 def striplist(L):
     return map(lambda l: l.strip(), L)
 

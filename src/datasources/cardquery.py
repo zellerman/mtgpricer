@@ -56,7 +56,12 @@ class CardFinder(object):
         return cards
     
     def getRealEditionName(self, ed):
-        return self.editions[ed]
+        if ed is not None:
+            return self.editions[ed.lower()]
+        return None
+    
+    def isCardNamePrefix(self, prefix):
+        return session.query(CardInfo).filter(func.lower(CardInfo.name).like(prefix+"%")).count() > 0
     
 def allsets():
     sets =session.query(CardInfo.edition).distinct()

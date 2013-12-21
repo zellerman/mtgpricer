@@ -7,7 +7,6 @@ from sqlalchemy.ext.declarative.api import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.schema import Column, ForeignKey
 from sqlalchemy.types import Integer, Unicode, String, Float
-
 Base = declarative_base()
 
 class CardInfo(Base):
@@ -47,7 +46,10 @@ class Card(Base):
     condition=Column(String)
     info = Column(Integer, ForeignKey('cardinfo.id'))    
     quantity=Column(Integer)
+    price=Column(Float)
     
     def __init__(self, quantity=None, condition=None):
         self.condition = condition
         self.quantity = quantity
+        
+        

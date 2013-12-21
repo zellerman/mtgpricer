@@ -13,7 +13,10 @@ class Test(unittest.TestCase):
 
 
     def testInit(self):
-        edsource.EditionHandler('../res/sets')
+        eh= edsource.EditionMapper('../res/sets')
+        #cherry pick some to randomly test
+        self.assertEqual("Alpha Edition", eh['a'], "Tim is gay"+eh['a'])
+        self.assertEqual("Arabian Nights", eh['Arabian Nights'], "Tim is gay"+eh['a'])
 
 
 if __name__ == "__main__":

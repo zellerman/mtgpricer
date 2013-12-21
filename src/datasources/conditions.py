@@ -11,12 +11,14 @@ conditionMods = {}
 def readConditions(path):
     global conditionNames
     global conditionMods
+    print path
 
     entries = linesOfFile(path)
     for e in entries:
-        k,v = striplist(e.split(':'))
-        conditionMods[k]=v
+        k,v = striplist(map(lambda x: x.lower(), e.split(':')))
+        conditionMods[k]=float(v)
         conditionNames.append(k)
 
-#readConditions('../../res/conds')        
+readConditions('../../res/conds')       
+print conditionNames 
     

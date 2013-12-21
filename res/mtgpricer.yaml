@@ -1,4 +1,4 @@
-staticdata
-	conditions: res/conds
-	sets: res/sets
-	db: res/cards.db
+staticdata:
+    conditions: ../res/conds
+    editions: ../res/sets
+    db: ../res/cards.db

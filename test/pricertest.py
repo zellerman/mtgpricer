@@ -8,7 +8,7 @@ import pricer
 from pricer import PriceCalculator
 
 from datasources.cardquery import CardFinder
-from datasources.editions import EditionHandler
+from datasources.editions import EditionMapper
 from datasources.conditions import conditionMods, readConditions
 
 import config.logconfig as lc
@@ -33,7 +33,7 @@ class Test(unittest.TestCase):
     def setUpClass(self):
         lc.initLogging('../res/log.cfg')
         self.pc = PriceCalculator({'EX':0.8, 'NM':1}, {'HUF', 220}, '(h+l)/2')
-        self.cf = CardFinder(EditionHandler('../res/sets'))
+        self.cf = CardFinder(EditionMapper('../res/sets'))
         readConditions('../res/conds')
 
 

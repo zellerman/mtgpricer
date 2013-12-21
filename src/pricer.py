@@ -70,13 +70,13 @@ class PriceCalculator:
     '''   
     def calculateCardSet(self, cards):
         for card in cards:
-            price = self.calcutatePrice(card, self.defaultExpression)
-            price = self.modulateByCondition(price, card.condition)
-            card.prices = self.otherCurrencies(price)
+            card.price = self.calcutatePrice(card.info, self.defaultExpression)
+            card.price = self.modulateByCondition(card.price, card.condition)
+            card.prices = self.otherCurrencies(card.price)
         return cards
 
     def modulateByCondition(self, price, condition):
-        return price*self.conditions[condition]
+        return price*self.conditions[condition.lower()]
     
         
 def calc_price(usd):

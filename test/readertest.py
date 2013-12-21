@@ -5,28 +5,35 @@ Created on 2013.11.18.
 '''
 import unittest
 from readers import StockParser, readXLSStock
+from datasources.conditions import conditionNames
+from datasources.editions import EditionMapper
 
 
 class Test(unittest.TestCase):
 
 
     def setUp(self):
-        pass
-
-
+        self.conditions = conditionNames
+        self.editions = EditionMapper('../res/sets')
     def tearDown(self):
         pass
 
+    def testFindPart(self):
+        tokens = ['1','overkill','force','natural','selection']
+        sp = StockParser(self.conditions, self.editions, [], ' ')
+        self.assertEquals(sp.findCardName(tokens), 'natural selection','fagness')
 
-#    def testReadPlainTextStock(self):
-#        lines = map(lambda x: x.strip(), open('whitespacedstock').readlines())
-#        print lines
-#        sp = StockParser(['a','b','u','rav', 'ex'], ['ex','gm','f','p'], lines, ';')
-#        ret = sp.build()
-#        for k in ret:
-#            print k
-#        pass
+    @unittest.skip('fag')
+    def testReadPlainTextStock(self):
+        lines = map(lambda x: x.strip(), open('whitespacedstock').readlines())
+        sp = StockParser(self.conditions, self.editions, lines, ' ')
+        print lines
+        ret = sp.build()
+        for k in ret:
+            print k
+        pass
     
+    @unittest.skip('pprop')
     def testReadXLSStock(self):
         filename = 'stock.xlsx'
         readXLSStock(filename)
