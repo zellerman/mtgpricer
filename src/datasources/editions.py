@@ -10,7 +10,7 @@ No more chicken for the faint hearted, bitch!
 
 from util import striplist, linesOfFile, lowerize
 import logging
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('mine')
 
 class EditionMapper(object):
 

@@ -7,9 +7,8 @@ Created on 2013.12.10.
 from logging import config
 import yaml
 
+
 def initLogging(path):
-    yf=open(path)
+    yf = open(path)
     lconf = yaml.safe_load(yf)
-#    print lconf
     config.dictConfig(lconf)
-    

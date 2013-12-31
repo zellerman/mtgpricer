@@ -5,8 +5,10 @@ Created on 2013.12.11.
 '''
 
 from util import striplist, linesOfFile
+
 conditionNames = []
 conditionMods = {}
+
 
 def readConditions(path):
     global conditionNames
@@ -15,10 +17,11 @@ def readConditions(path):
 
     entries = linesOfFile(path)
     for e in entries:
-        k,v = striplist(map(lambda x: x.lower(), e.split(':')))
-        conditionMods[k]=float(v)
+        k, v = striplist(map(lambda x: x.lower(), e.split(':')))
+        conditionMods[k] = float(v)
         conditionNames.append(k)
 
-readConditions('../../res/conds')       
-print conditionNames 
-    
+
+if __name__ == '__main__':
+    readConditions('../../res/conds')
+    print conditionNames

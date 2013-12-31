@@ -7,22 +7,24 @@ from sqlalchemy.ext.declarative.api import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.schema import Column, ForeignKey
 from sqlalchemy.types import Integer, Unicode, String, Float
+
 Base = declarative_base()
+
 
 class CardInfo(Base):
     __tablename__ = 'cardinfo'
-    
-    id=Column(Integer, primary_key=True)
-    name=Column(Unicode)
-    edition=Column(Unicode)
-    rarity=Column(String)
-    pic=Column(String)
-    hi=Column(Float)
-    med=Column(Float)
-    lo=Column(Float)
+
+    id = Column(Integer, primary_key=True)
+    name = Column(Unicode)
+    edition = Column(Unicode)
+    rarity = Column(String)
+    pic = Column(String)
+    hi = Column(Float)
+    med = Column(Float)
+    lo = Column(Float)
     card = relationship("Card", uselist=False, backref="cardinfo")
 
-    def __init__(self, name=None, cost=None, edition=None, rarity=None,pic =None, hi=None, med=None, lo=None):
+    def __init__(self, name=None, cost=None, edition=None, rarity=None, pic=None, hi=None, med=None, lo=None):
         self.name = name
         self.cost = cost
         self.edition = edition
@@ -31,25 +33,33 @@ class CardInfo(Base):
         self.hi = hi
         self.med = med
         self.lo = lo
-       
-       
-    def tostring(self):   
-        return "[Card: " + ", ".join(filter(None,[self.name,  self.edition, self.rarity, str(self.hi), str(self.med), str(self.lo)])) + "]"
+
+
+    def tostring(self):
+        return "[Card: " + ", ".join(
+            filter(None, [self.name, self.edition, self.rarity, str(self.hi), str(self.med), str(self.lo)])) + "]"
+
     def __repr__(self):
         return self.tostring()
+
     def __str__(self):
         return self.tostring()
-    
+
+
 class Card(Base):
     __tablename__ = 'card'
-    id= Column(Integer, primary_key=True)
-    condition=Column(String)
-    info = Column(Integer, ForeignKey('cardinfo.id'))    
-    quantity=Column(Integer)
-    price=Column(Float)
-    
+    id = Column(Integer, primary_key=True)
+    condition = Column(String)
+    info = Column(Integer, ForeignKey('cardinfo.id'))
+    quantity = Column(Integer)
+    price = Column(Float)
+
+
     def __init__(self, quantity=None, condition=None):
         self.condition = condition
         self.quantity = quantity
-        
-        
+
+    def getattr(self, attr):
+        if 'info' in attr:
+            return getattr(self.info, attr[attr.index('.')+1:])
+        return getattr(self, attr)
