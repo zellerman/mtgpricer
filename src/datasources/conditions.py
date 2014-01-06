@@ -13,7 +13,6 @@ conditionMods = {}
 def readConditions(path):
     global conditionNames
     global conditionMods
-    print path
 
     entries = linesOfFile(path)
     for e in entries:

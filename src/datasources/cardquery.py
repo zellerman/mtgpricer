@@ -11,12 +11,14 @@ import logging
 logger = logging.getLogger('mine')
 
 from sqlalchemy.sql.expression import func
-from database import session
+from database import db
 from entities import CardInfo
 
 
-def partial_name_lookup(card, edition=None):
-    pass
+def checkDB():
+    #just a reasonably big enough number to ensure the db is not empty
+    chkno = 500
+    assert db.session.query(CardInfo).limit(chkno).count() == chkno
 
 
 class CardFinder(object):
@@ -30,7 +32,7 @@ class CardFinder(object):
         self.forceSingleMatch = forceSingleMatch
 
     def findCard(self, card, edition=None):
-        cquery = session.query(CardInfo).filter(func.lower(CardInfo.name) == func.lower(card))
+        cquery = db.session.query(CardInfo).filter(func.lower(CardInfo.name) == func.lower(card))
         edition = self.getRealEditionName(edition)
         if edition is not None:
             cquery = cquery.filter(func.lower(CardInfo.edition) == func.lower(edition))
@@ -47,7 +49,7 @@ class CardFinder(object):
     def findCards(self, cards, editions=None):
         print cards
         cards = map(lambda c: c.lower(), cards)
-        cquery = session.query(CardInfo).filter(func.lower(CardInfo.name).in_(cards))
+        cquery = db.session.query(CardInfo).filter(func.lower(CardInfo.name).in_(cards))
         if editions is not None:
             editions = map(self.getRealEditionName, editions)
             #    if editions is not None:
@@ -63,10 +65,10 @@ class CardFinder(object):
         return None
 
     def isCardNamePrefix(self, prefix):
-        return session.query(CardInfo).filter(func.lower(CardInfo.name).like(prefix + "%")).count() > 0
+        return db.session.query(CardInfo).filter(func.lower(CardInfo.name).like(prefix + "%")).count() > 0
 
 
 def allsets():
-    sets = session.query(CardInfo.edition).distinct()
+    sets = db.session.query(CardInfo.edition).distinct()
     for s in sets.all():
         print '{a}#{a},'.format(a=s[0])

@@ -10,6 +10,8 @@ from sqlalchemy.types import Integer, Unicode, String, Float
 
 Base = declarative_base()
 
+from sqlalchemy.sql.expression import and_, func
+
 
 class CardInfo(Base):
     __tablename__ = 'cardinfo'
@@ -24,9 +26,8 @@ class CardInfo(Base):
     lo = Column(Float)
     card = relationship("Card", uselist=False, backref="cardinfo")
 
-    def __init__(self, name=None, cost=None, edition=None, rarity=None, pic=None, hi=None, med=None, lo=None):
+    def __init__(self, name=None, edition=None, rarity=None, pic=None, hi=None, med=None, lo=None):
         self.name = name
-        self.cost = cost
         self.edition = edition
         self.rarity = rarity
         self.pic = pic
@@ -45,6 +46,18 @@ class CardInfo(Base):
     def __str__(self):
         return self.tostring()
 
+    def saveOrUpdate(self, session):
+        dbEnt = session.query(CardInfo).filter(and_(func.lower(CardInfo.name) == func.lower(self.name),
+                                                    func.lower(CardInfo.edition) == func.lower(self.edition))).first()
+        if dbEnt:
+            dbEnt.hi = self.hi
+            dbEnt.med = self.med
+            dbEnt.lo = self.lo
+            session.merge(dbEnt)
+            self = dbEnt
+        else:
+            session.add(self)
+
 
 class Card(Base):
     __tablename__ = 'card'
@@ -61,5 +74,5 @@ class Card(Base):
 
     def getattr(self, attr):
         if 'info' in attr:
-            return getattr(self.info, attr[attr.index('.')+1:])
+            return getattr(self.info, attr[attr.index('.') + 1:])
         return getattr(self, attr)

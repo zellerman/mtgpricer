@@ -23,7 +23,8 @@ class FormatterFactory(object):
 
 class BasicFormatter(object):
     def __init__(self, stream):
-        self.stream = stream
+        #workaround excel input, maybe a hack
+        self.stream = stream.replace('.xls', '.txt').replace('.xlsx', '.xls')
 
     def printCards(self, cards):
         try:
@@ -32,7 +33,7 @@ class BasicFormatter(object):
                 for card in cards:
                     self.printCard(card)
         except Exception, e:
-            print e.message
+            logger.exception(e.message)
             logger.critical('Cannot save the results')
 
     def printCard(self, card):

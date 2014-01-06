@@ -301,14 +301,16 @@ class ExcelParser(object):
                 pass
             else:
                 fields[f] = sheet.cell_value(0, f)
-        print fieldcount
+#        print fieldcount
         rc = sheet.nrows
-        print rc
+#        print rc
         for rx in range(1, rc):
             for colidx in range(sheet.row_len(rx)):
                 if sheet.cell_type(rx, colidx) in (xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK):
                     pass
                 else:
+ #                   print rx, colidx
+ #                   print fields
                     raws[rx][fields[colidx]] = sheet.cell_value(rx, colidx)
         cards = []
         for rawCard in raws.values():
@@ -317,7 +319,6 @@ class ExcelParser(object):
             if cardInfo:
                 c.info = cardInfo[0]
                 cards.append(c)
-        print cards
         return cards
 
 
@@ -327,6 +328,7 @@ class RawCard(object):
         self.qty = kwargs.get('qty', 1)
         self.edition = kwargs.get('set', None)
         self.condition = kwargs.get('condition', None)
+
 
 class ParserFactory(object):
     @staticmethod

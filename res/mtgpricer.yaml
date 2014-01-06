@@ -2,3 +2,6 @@ staticdata:
     conditions: ../res/conds
     editions: ../res/sets
     db: ../res/cards.db
+    progdata: ../res/progdata
+vars:
+    dbrefreshrate: 7
