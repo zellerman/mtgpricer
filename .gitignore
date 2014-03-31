@@ -1,1 +1,15 @@
 *.pyc
+.idea/.name
+.idea/cardpricer.iml
+.idea/dictionaries/502108836.xml
+.idea/encodings.xml
+.idea/inspectionProfiles/Project_Default.xml
+.idea/inspectionProfiles/profiles_settings.xml
+.idea/misc.xml
+.idea/modules.xml
+.idea/scopes/scope_settings.xml
+.idea/vcs.xml
+.idea/workspace.xml
+test/testtest.py
+test/tutu.py
+test/ubor.py

@@ -1,0 +1,4 @@
+staticdata:
+	conditions: res/conds
+	sets: res/sets
+	db: res/cards.db

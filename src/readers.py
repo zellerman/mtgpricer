@@ -26,30 +26,6 @@ def setSeparator(self):
         self.separator = ';'
 
 
-'''
-Conform to the format:
-[qty], [condition], [set], card
-
-Quantity can be omitted, in this case the value is defaulted to 1.
-Condition can be omitted in this case it is taken as NM.
-If present it has to be a value from the predefined condition names.
-By default the program identifies two condition sets:
-GM-M-NM-EX-VG-G-P-HP
-GM-M-NM-SP-MP-P-HP
-+ and - is a syntactically valid modifier for any condition value (though might not make sense, like GM+)
-BGS and PSA grade is also identified but subgrades are not for now.
-i.e BGS9.5 is OK but BGS8(7.5,6,8.5,8.5) is not.
-
-Set can be omitted, if the card is printed in only one set.
-In any other cases the ambiguous result leads to a failed parse.
-
-The separator can't be whitespace!
-The default separator is comma, but a custom value can be defined in the first line of the file.
-I this case that line should contain only that character and will be used as a separator.
-
-'''
-
-
 def readPlainTextStock(stock):
     line0 = stock[0]
     separator = r'\s+'
@@ -235,7 +211,7 @@ class StockParser(object):
             if can.last < ll - 1:
                 tokens += tokens[can.last + 1:]
             return can.joined
-            #if more than one candidates exists, cross check
+            #if more than one candidates exist, cross check
         #first check whether any if them is a set name as well
         setnames = []
         for c in candidates:
@@ -276,10 +252,6 @@ class StockParser(object):
         return exprs
 
 
-'''
-Must have a header line
-'''
-
 import xlrd
 import collections as co
 
@@ -301,18 +273,21 @@ class ExcelParser(object):
                 pass
             else:
                 fields[f] = sheet.cell_value(0, f)
+        print fields
 #        print fieldcount
         rc = sheet.nrows
 #        print rc
         for rx in range(1, rc):
-            for colidx in range(sheet.row_len(rx)):
-                if sheet.cell_type(rx, colidx) in (xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK):
+            for colidx, fieldname in fields.iteritems():
+            # for colidx in range(sheet.row_len(rx)):
+                if colidx >= sheet.row_len(rx):
                     pass
-                else:
+                elif sheet.cell_type(rx, colidx) not in (xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK):
  #                   print rx, colidx
  #                   print fields
-                    raws[rx][fields[colidx]] = sheet.cell_value(rx, colidx)
+                    raws[rx][fieldname] = sheet.cell_value(rx, colidx)
         cards = []
+        print raws
         for rawCard in raws.values():
             c = Card(rawCard.get('qty', 1), rawCard.get('condition', 'NM'))
             cardInfo = cf.findCard(rawCard['name'], rawCard.get('set', None))

@@ -1,51 +1,41 @@
-'''
-Created on Mar 15, 2013
-
-@author: davidborsodi
-'''
-
-'''
-   PriceCalculator determines the price of a card given its database price and an optionally provided
-   function.
-   It can also change the price to other currencies if the mappings are given.
-'''
-
 
 class PriceCalculator:
-    '''
-        Conditions is the map of {condition - price scaler} values.
-        Curs is the map of currencies in the format of {displayname - exchange rate relative to the base currency}
-        Expr is the default pricer expression, if not given the median price is taken.
-    '''
+    """
+       PriceCalculator determines the price of a card given its database price and an optionally provided
+       function.
+       It can also change the price to other currencies if the mappings are given.
+    """
 
     def __init__(self, conditions, curs=None, expr=None):
+        """
+            Conditions is the map of {condition - price scaler} values.
+            Curs is the map of currencies in the format of {displayname - exchange rate relative to the base currency}
+            Expr is the default pricer expression, if not given the median price is taken.
+        """
         self.currencies = curs
         self.defaultExpression = expr
         self.conditions = conditions
 
-    '''
-        Returns the price of the in the currencies set for this PriceCalculator.
-        Returns a map of currencyname-price pairs
-    '''
-
     def otherCurrencies(self, price):
+        """
+            Returns the price of the in the currencies set for this PriceCalculator.
+            Returns a map of currencyname-price pairs
+        """
         returns = {'USD': price}
         if self.currencies and len(self.currencies) > 0:
             for c, rate in self.currencies.iteritems():
                 returns[c] = price * rate
         return returns
 
-    ('\n'
-     '        Calculates the price of the given card using the given expression.\n'
-     '        \n'
-     '        Takes a CardInfo object and an arithmetic expression.\n'
-     '        The expression - if given - must be a function of high(h), med(m) and low(l) prices or a constant, otherwise the price will be med.\n'
-     '        \n'
-     '        Returns the price as a real number. \n'
-     '    '
-    )
-
     def calcutatePrice(self, card, expression=None):
+        """
+         '        Calculates the price of the given card using the given expression.\n'
+         '        \n'
+         '        Takes a CardInfo object and an arithmetic expression.\n'
+         '        The expression - if given - must be a function of high(h), med(m) and low(l) prices or a constant, otherwise the price will be med.\n'
+         '        \n'
+         '        Returns the price as a real number. \n'
+        """
         h = card.hi
         m = card.med
         l = card.lo
@@ -62,20 +52,19 @@ class PriceCalculator:
     def _evalpricer(self, h, l, m):
         pass
 
-    '''
-        Takes a set of Cards and prices them using the given pricing rules.
-        Returns the cards with price info applied.
-        The objects are modified in place.
-        
-        The algorithm is the following:
-        1. Basic price is determined using the DB prices and the pricer function.
-        2. Card condition is taken into account, using the predefined values.
-        3. Total is calculated which is price * quantity
-        4. If other currencies are given, the price (and the total is calculated in those as well)
-        
-    '''
-
     def calculateCardSet(self, cards):
+        """
+            Takes a set of Cards and prices them using the given pricing rules.
+            Returns the cards with price info applied.
+            The objects are modified in place.
+
+            The algorithm is the following:
+            1. Basic price is determined using the DB prices and the pricer function.
+            2. Card condition is taken into account, using the predefined values.
+            3. Total is calculated which is price * quantity
+            4. If other currencies are given, the price (and the total is calculated in those as well)
+
+        """
         for card in cards:
             card.price = self.calcutatePrice(card.info, self.defaultExpression)
             card.price = self.modulateByCondition(card.price, card.condition)
@@ -160,6 +149,3 @@ def meanpricer(path):
     print total
 
 #meanpricer('./krezganak')
-
-
-    

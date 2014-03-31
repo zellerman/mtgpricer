@@ -1,6 +1,6 @@
 import unittest
 from sqlalchemy.sql.expression import and_
-import cardreader
+import priceminers
 from datasources import database
 from datasources.entities import CardInfo
 
@@ -19,7 +19,7 @@ class Test(unittest.TestCase):
             layout changes or sth else.
         """
         try:
-            htmlfrag = cardreader.fetchCardsFromPage('Return to Ravnica')
+            htmlfrag = priceminers.fetchCardsFromPage('Return to Ravnica')
         except Exception, e:
             self.fail('Exception in getting the page!' + str(e))
         self.assertGreater(htmlfrag, 0, 'The fragment mined is empty!')
@@ -31,9 +31,9 @@ class Test(unittest.TestCase):
             The nr of card tr-s found or the rtr page should be 274. If the result
             differs, something has gone wrong. Either the page HTML has changed or else...
         """
-        raw = cardreader.fetchCardsFromPage('Return to Ravnica')
+        raw = priceminers.fetchCardsFromPage('Return to Ravnica')
         print raw
-        self.assertEqual(len(cardreader.minecards(raw)), 274, 'Got fucked up??')
+        self.assertEqual(len(priceminers.minecards(raw)), 274, 'Got fucked up??')
 
     def testPersistOnce(self):
         session = self.db.session

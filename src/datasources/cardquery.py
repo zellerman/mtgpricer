@@ -4,16 +4,14 @@ Created on 2013.12.09.
 @author: 502108836
 '''
 
-import database
 
 import logging
-
-logger = logging.getLogger('mine')
-
+import datasources
 from sqlalchemy.sql.expression import func
 from database import db
 from entities import CardInfo
 
+logger = logging.getLogger('mine')
 
 def checkDB():
     #just a reasonably big enough number to ensure the db is not empty
@@ -22,17 +20,17 @@ def checkDB():
 
 
 class CardFinder(object):
-    '''
+    """
         editions is a datasources.editions.EditionHandler object
         forceSingleMatch makes findCard return one match even if more is found. Defaulted to True.
-    '''
+    """
 
     def __init__(self, editions, forceSingleMatch=True):
         self.editions = editions
         self.forceSingleMatch = forceSingleMatch
 
     def findCard(self, card, edition=None):
-        cquery = db.session.query(CardInfo).filter(func.lower(CardInfo.name) == func.lower(card))
+        cquery = datasources.database.db.session.query(CardInfo).filter(func.lower(CardInfo.name) == func.lower(card))
         edition = self.getRealEditionName(edition)
         if edition is not None:
             cquery = cquery.filter(func.lower(CardInfo.edition) == func.lower(edition))

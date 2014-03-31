@@ -20,14 +20,24 @@ class DB(object):
 
         ci = Table('cardinfo', metadata,
                    Column('id', Integer, primary_key=True, autoincrement=True),
-                   Column('name', Unicode),
-                   Column('edition', Unicode),
+                   Column('name', Unicode, index=True),
+                   Column('searchname', Unicode, index=True),
                    Column('rarity', String),
-                   Column('pic', String),
-                   Column('hi', Float),
-                   Column('med', Float),
-                   Column('lo', Float)
-        )
+                   Column('edition_id', Integer, ForeignKey('edition'
+                                                            '.id'))
+                   )
+
+        ed = Table('edition', metadata,
+                   Column('id', Integer, primary_key=True, autoincrement=True),
+                   Column('name', Unicode, unique=True),
+                   )
+
+        eds = Table('edition_sexp', metadata,
+                    Column('id', Integer, primary_key=True, autoincrement=True),
+                    Column('name', Unicode),
+                    Column('source', Unicode),
+                    Column('ed_id', Integer, ForeignKey('edition.id', onupdate='cascade', ondelete='cascade'))
+                    )
 
         c = Table('card', metadata,
                   Column('id', Integer, primary_key=True),
@@ -35,11 +45,31 @@ class DB(object):
                   Column('quantity', Integer),
                   Column('price', Float),
                   Column('info', Integer, ForeignKey('cardinfo.id'))
-        )
+                  )
 
+        ap = Table('avgprice', metadata,
+                   Column('id', Integer, primary_key=True),
+                   Column('hi', Float),
+                   Column('med', Float),
+                   Column('lo', Float),
+                   Column('source', String, nullable=False),
+                   Column('currency', String, default='USD'),
+                   Column('card_id', Integer, ForeignKey('cardinfo.id'))
+                   )
+
+        ip = Table('individualprice', metadata,
+                   Column('id', Integer, primary_key=True),
+                   Column('price', Float),
+                   Column('source', String, nullable=False),
+                   Column('currency', String, default='USD'),
+                   Column('card_id', Integer, ForeignKey('cardinfo.id'))
+        )
         metadata.create_all(self.engine, checkfirst=True)
 
     def save_list(self, entities):
         self.session.add_all(entities)
         self.session.commit()
 
+
+if __name__ == '__main__':
+    DB('../../res/expdb.db')

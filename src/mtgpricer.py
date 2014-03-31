@@ -7,7 +7,7 @@ import logging
 import os
 import re
 import yaml
-from miner import cardreader
+from miner import priceminers
 
 from readers import ParserFactory
 import argparse
@@ -23,7 +23,8 @@ from util import currentTimeMillis, dayToSec
 
 
 class IOHandlers(object):
-    pass
+    def __init__(self):
+        self.parser = self.formatter = None
 
 
 class SetHandlersAction(argparse.Action):
@@ -61,8 +62,8 @@ def setupParser():
     parser.add_argument('-r', '--refreshdb', help='refresh the price database on startup (might take a few minutes)',
                         action='store_true', default=False)
 
-    #in place pricing
-    parser.add_argument('-o', '--overwrite', help='Overwrite the input file', action='store_true')
+    #in place pricing, not supported
+    parser.add_argument('-o', '--overwrite', help='Not supported')
 
     #input file
     parser.add_argument('stock', help='the input stock file')
@@ -93,12 +94,13 @@ if __name__ == '__main__':
         sys.argv.append('xx')
 
     ns = parser.parse_args()
+
     refreshrate = dayToSec(config.get('vars').get('dbrefreshrate'))
     lastrefreshed = progdata.get('db').get('lastrefresh')
     now = currentTimeMillis()
     if ns.refreshdb or lastrefreshed < now - refreshrate:
         try:
-            cardreader.processAll()
+            priceminers.processAll()
             progdata.get('db')['lastrefresh'] = now
             with open(config.get('staticdata').get('progdata'), 'w') as yaml_file:
                 yaml_file.write(yaml.dump(progdata, default_flow_style=False))

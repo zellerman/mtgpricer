@@ -3,6 +3,7 @@ import time
 ###
 ###time manipulation
 ###
+import unicodedata
 
 currentTimeMillis = lambda: int(round(time.time() * 1000))
 
@@ -36,3 +37,8 @@ def linesOfFile(path, omitEmpty=True):
     if omitEmpty:
         lines = filter(lambda x: len(x) > 0, lines)
     return lines
+
+
+def strip_accents(s):
+    print ''.join((c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn'))
+    return ''.join((c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn'))

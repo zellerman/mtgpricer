@@ -3,20 +3,32 @@ Created on Dec 19, 2012
 
 @author: davidborsodi
 """
+import logging
 import os
-
 import re
-import unicodedata
-import requests
 import codecs
-from datasources import database
-from datasources.entities import CardInfo
-from util import striplist
 from HTMLParser import HTMLParser
 
+import requests
+from requests.packages.urllib3.exceptions import HTTPError
 
-def strip_accents(s):
-    return ''.join((c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn'))
+from datasources import database
+from datasources.entities import CardInfo
+from util import striplist, strip_accents
+
+logger = logging.getLogger('mine')
+
+
+class Requestor(object):
+
+    def gethttp(self, **kwargs):
+        url = kwargs['url']
+        del kwargs[url]
+        response = requests.get(url, **kwargs)
+        try:
+            response.raise_for_status()
+        except HTTPError, he:
+            logger.exception("", he)
 
 
 class CardParser:
@@ -140,7 +152,9 @@ def fetchCardsFromPage(setname):
     results = requests.get("http://magic.tcgplayer.com/db/search_result.asp",
                            params={'Set_Name': setname}, timeout=10)
     pagetext = re.sub(r'(\n|\t|\r)', '', results.text.encode('utf-8'))
+    print 'sn', setname
     cardsraw = re.search(r'ACTION="search_result.asp"(.*)</table></FORM>', pagetext, re.MULTILINE | re.DOTALL)
+    print cardsraw
     return cardsraw.group(1)
 
 
@@ -157,18 +171,27 @@ def fetchAll(setnames, output):
 
 
 def getSets():
-    os.environ['http_proxy']=''
-    results = requests.get("http://store.tcgplayer.com/magic?partner=MTGTCG", timeout=10)
-    flop = re.search(r'<select id="SetName" name="SetName" style="">(.*?)</select>', results.text, re.DOTALL)
+    os.environ['http_proxy'] = ''
+    proxies = {
+        #        "http": "http://502108836:Alma%401234Alma@3.187.59.236:9400",
+        # "https": "http://502108836:Alma%401234Alma@3.187.59.236:9400",
+    }
+    results = requests.get("http://store.tcgplayer.com/magic", proxies=proxies, params={'partner': 'MTGTCG'},
+                           timeout=10)
+    print results.text
+    flop = re.search(r'<select id="SetName"\s+name="SetName"\s+style="">(.*?)</select>', results.text, re.DOTALL)
     setsraw = flop.group(1).strip()
     setnames = []
     hp = HTMLParser()
     print setsraw
     for st in striplist(setsraw.split(r'option>')):
         print 'stmax', st
-        setname = hp.unescape(re.search(r'>(.*?)</', st).group(1))
-        print setname
-        setnames.append(setname)
+        rawElem = re.search(r'>(.*?)</', st)
+        if rawElem:
+            setname = hp.unescape(rawElem.group(1))
+            print setname
+            setnames.append(setname)
+    setnames.remove('All Sets')
     return setnames
 
 
@@ -179,8 +202,83 @@ def processAll():
     cardsfile.close()
 
 
+class CardParserBase(object):
+
+    def parse(self, sets):
+        """
+        Api entry
+        @return:
+        """
+        pass
+
+    def parseCardPage(self, name):
+        #db/search_result.asp?name=armageddon&exact=1
+        """
+        Parser of the individual card page, if applicable
+        @return:
+        """
+        pass
+
+    def parseAggregatePage(self, edition):
+        """
+        Parser of the card aggregator page (e.g set page) if applicable.
+        @return:
+        """
+        pass
+
+
+class Miner(object):
+
+    def __init__(self, cardparser, host):
+        """
+        @param cardparser: parser for the site
+        @param host: the host url
+        """
+        self.host = host
+        self.cardparser = cardparser
+        self.setnames = None
+
+    def processAll(self):
+        self.getSets()
+        self.fetchAll()
+
+    def getSets(self):
+        """
+        set names are always mined from the same, trusted source: magiccards.info
+        @return:
+        """
+        os.environ['http_proxy'] = ''
+        proxies = {
+            #        "http": "http://502108836:Alma%401234Alma@3.187.59.236:9400",
+            # "https": "http://502108836:Alma%401234Alma@3.187.59.236:9400",
+        }
+        results = requests.get("http://magiccards.info/search.html", proxies=proxies,
+                               timeout=10)
+        # print results.text
+        setstag = re.search(r'<label\s+for="edition">.*?<option value=""></option>(.*?)</select>', results.text, re.DOTALL)
+
+        setsraw = setstag.group(1).strip()
+        # print setsraw
+        setnames = []
+        hp = HTMLParser()
+        print setsraw
+        for st in striplist(setsraw.split(r'option>')):
+            print 'stmax', st
+            rawElem = re.search(r'value="(.*)">(.*?)<', st)
+            if rawElem:
+                setkey = hp.unescape(rawElem.group(1))
+                setname = hp.unescape(rawElem.group(2))
+                print setkey, setname
+                setnames.append(setname)
+        setnames.remove('All Sets')
+        self.setnames = setnames
+
+    def fetchAll(self):
+        pass
 
 if __name__ == '__main__':
     database.db = database.DB('../../res/cards.db')
-    getSets()
+    m = Miner('')
+    m.getSets()
+    #getSets()
     # processAll()
